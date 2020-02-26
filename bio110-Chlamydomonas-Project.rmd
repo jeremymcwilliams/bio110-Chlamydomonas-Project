@@ -1,19 +1,246 @@
+
 ---
-title: "R Notebook"
-output: html_notebook
+title: "Bio 110 Chlamydomonas Project"
+output:
+html_document:
+df_print: paged
+html_notebook: default
+pdf_document: default
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+# Chlamydomonas Independent Project data analysis
+
+**IMPORTANT** As a general rule of coding, when trying out new code, NEVER directly edit the example code.  ALWAYS copy and paste and then edit the copied code to ensure that the example code is not altered or accidentally deleted.
+
+
+
+
+The goals of this tutorial are to:
+import your two data sets (treated and untreated) from spreadsheets to R Studio
+calculate the means of your measured flagella lengths at each time point (both data sets)
+calculate the 95% confidence intervals of the mean flagella length at each time point (both data sets)
+plot the means as points with error bars.
+
+This lab will be very similar to the last lab. The main difference is that you'll have two data sets instead of one, and you'll make a single plot containing both data sets.
+
+
+
+This week you have collected measurements for 15 Chlamydomonas flagella per time point for two sets of data, treated and untreated.
+For each dataset you should have two columns of data titled, time and length, with no extra columns or unusual characters.
+
+Once you have checked that your spreadsheets follow these basic rules, save each as a .csv file in your BIO 110 folder on the desktop. The file should have a short simple name, such as your group's initials and treated or untreated.
+
+First upload your .csv files to R Studio in the bottom right window using the Upload button.  Browse to locate your files and click Upload.  Make sure they load into the bio110-chlamyindproject folder. 
+
+**NOTE - Make sure you DO NOT open your csv files in Mac "Numbers". It will screw up your data.
+
+Before writing any R code, we'll need to load some R packages in order to use some of the specific functions we want.  Run the code chunk below to make sure these functions are available to your environment:
 
 ```{r}
-plot(cars)
+
+# the "tidyverse" loads multiple packages that we need, like ggplot, dplyr, and readr
+
+library(tidyverse)
+
+
+
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+Just like last week, you'll want to load your data as data frames into R by assigning them to variables. You should create one for each data set (e.g. "treated" and "untreated").
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+Load your treated data file to a variable called treated using the read_csv() function. Load your untreated data file to a variable called untreated, and then print both variables to confirm. Be aware that when you print your stats, they'll be displayed in the order that they are printed.
+
+```{r}
+# for example,copy and paste the following command below, using your .csv file name in "":
+# treated<-read_csv("treated.csv")
+# untreated<-read_csv("untreated.csv")
+
+
+
+
+# confirm by printing your variable
+
+#treated
+#untreated
+
+
+
+```
+
+
+Just like the last lab, we're going to use "groub_by" with "summarise" to generate statistical measures (mean, standard deviation, count, and upper and lower confidence interval limits). This time we'll need to apply these techniques to both data sets. 
+
+To refresh, here's the command for doing this:
+
+treatedStats<-treated %>% group_by(time) %>% summarise (Average=mean(length), StandardDeviation=sd(length), n=n(), upperCI=Average+((qnorm(0.975)*StandardDeviation)/sqrt(n)), lowerCI=Average-((qnorm(0.975)*StandardDeviation)/sqrt(n)))
+
+
+* I'm starting with my loaded data (treated)
+
+* I'm using the %>% command to pass "treated" to the group_by function, and indicating that the data should be grouped by the "time" column header.
+
+* Then, I'm "piping" this to the "summarise" function, which lets me create columns in my new data frame "treatedStats" based upon formulas. In this case, I'm creating a column called "Average" and setting it equal to the mean of the grouped "length" column from treated. I'm also creating the column "StandardDeviation", and setting it equal to the standard deviation of the grouped data, using the sd() function. I'm then creating the column "n", which uses the n() function to count the number of measurements in each group. Finally I'm adding upperCI and lowerCI using formulas.
+
+So the new "treatedStats" data frame should have a structure that looks like this (the #'s are just placeholders for real computed values):
+
+time, Average, StandardDeviation, n, upperCI, lowerCI
+25, #, #, #, #, #
+40, #, #, #, #, #
+55, #, #, #, #, #
+70, #, #, #, #, #
+85, #, #, #, #, #
+
+This new data frame structured this way is the precursor for creating the plot that we want that shows the differences in groups.
+
+
+Run the same code for both your data sets, and then print them out to confirm. Be aware that when you print your stats, they'll be displayed in the order that they are printed.
+
+```{r}
+
+# for treated
+
+#treatedStats<-treated %>% group_by(time) %>% summarise (Average=mean(length), StandardDeviation=sd(length), n=n(), upperCI=Average+((qnorm(0.975)*StandardDeviation)/sqrt(n)), lowerCI=Average-((qnorm(0.975)*StandardDeviation)/sqrt(n)))
+
+# for untreated
+
+#untreatedStats<-untreated %>% group_by(time) %>% summarise (Average=mean(length), StandardDeviation=sd(length), n=n(), upperCI=Average+((qnorm(0.975)*StandardDeviation)/sqrt(n)), lowerCI=Average-((qnorm(0.975)*StandardDeviation)/sqrt(n)))
+
+
+
+# now print both
+
+#treatedStats
+#untreatedStats
+
+
+```
+
+
+
+Now with our data sets in this format, we should be able to create a visualization. Here are the characteristics we want:
+
+a point plotted for each group
+Time on the x-axis
+Average length on the y-axis
+Error bars for each point, showing the 95% confidence interval
+A line through each point
+
+The best way to approach this is to try a little bit at a time, test the output, add a little more, and test again, etc.
+
+****At this point it's worth explaining one key point about how ggplot works. Previously, we could create charts with code that looked like this, for example:
+
+ggplot(data=treatedStats, mapping=aes(x=time, y=Average))+geom_point()
+
+In that example, the "data" and "mapping" parameters are in the initial ggplot function, which makes them GLOBAL. This means that they apply to any functions that come after it, like geom_point(), etc. Since we want to create a plot with two different data sets, this approach would be problematic. We want one geom_point() function to have one dataset, and another geom_point() function to use a different dataset. Fortunately, the same plot can be written like this:
+
+ggplot()+geom_point(data=treatedStats, mapping=aes(x=time, y=Average))
+
+This makes the data and mapping parameters specific to just that geom_point() function....which allows us to use more than one data set, like this:
+
+ggplot()+geom_point(data=treatedStats, mapping=aes(x=time, y=Average))+geom_point(data=anotherDataSet, mapping=aes(x=time, y=Average))
+
+
+
+To start, try just generating a plot with points. In the example below, the "shape" parameter tells ggplot to automatically assign a shape to a point, and then use it in a legend.
+
+
+```{r}
+
+# Generate a point plot of your data below, with time on the x-axis, and average on the y-axis, using geom_point()
+# ggplot()+geom_point(data=treatedStats, mapping=aes(x=time, y=Average, shape="Treated"), size=5)+geom_point(data=untreatedStats, mapping=aes(x=time, y=Average, shape="Untreated"), size=5)
+
+
+
+
+```
+
+
+Now add the error bars by chaining geom_errorbar() functions to the last example. And just like before, you'll need to put the data and mapping parameters in the geom_errorbar() functions, so it knows which data to use:
+
+```{r}
+
+# Generate your plot with geom_point(), and add error bars using geom_errorbar()
+
+#ggplot()+
+#geom_point(data=treatedStats, mapping=aes(x=time, y=Average, shape="Treated"), size=5)+
+#geom_errorbar(data=treatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)+
+#geom_point(data=untreatedStats, mapping=aes(x=time, y=Average, shape="Untreated"), size=5)+
+#geom_errorbar(data=untreatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)
+
+
+
+
+
+```
+
+
+Now use the same technique to add connecting lines with geom_path():
+
+
+```{r}
+
+# Add the lines to the graph:
+
+
+#ggplot()+
+#geom_point(data=treatedStats, mapping=aes(x=time, y=Average, shape="Treated"), size=5)+
+#geom_errorbar(data=treatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)+
+#geom_path(data=treatedStats, mapping=aes(x=time, y=Average))+
+#geom_point(data=untreatedStats, mapping=aes(x=time, y=Average, shape="Untreated"),   size=5)+
+#geom_errorbar(data=untreatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)+
+#geom_path(data=untreatedStats, mapping=aes(x=time, y=Average))
+
+
+
+
+```
+
+
+
+
+Now we can clean up the plot by adjusting our x- and y- axes with the xlim() and ylim() functions. Each function takes a minimum and maximum (e.g. +ylim(0, 10)).  Make sure your upper limit is high enough to include all data points and error bars.
+
+```{r}
+
+# Adjust your axes with the xlim and ylim functions. Edit the values those functions below to improve your plot.
+
+#ggplot()+
+#geom_point(data=treatedStats, mapping=aes(x=time, y=Average, shape="Treated"), size=5)+
+#geom_errorbar(data=treatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)+
+#geom_path(data=treatedStats, mapping=aes(x=time, y=Average))+
+#geom_point(data=untreatedStats, mapping=aes(x=time, y=Average, shape="Untreated"),   size=5)+
+#geom_errorbar(data=untreatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)+geom_path(data=untreatedStats, mapping=aes(x=time, y=Average))+
+#xlim(c(0,90))+ylim(c(0,8))
+
+
+
+
+```
+
+
+Finally, add some labels using the labs() function. You can overwrite the "shape" title on the legend by using shape='my title'
+
+```{r}
+
+# Update the values in the labs() function below.  You can also rename "Treated" and "Untreated" labels after shape=.
+
+#cut and paste your previous code and add: +labs(x="my x label", y="my y axis label") filling in the appropriate labels for your axes
+#ggplot()+
+#geom_point(data=treatedStats, mapping=aes(x=time, y=Average, shape="Treated"), size=5)+
+#geom_errorbar(data=treatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)+
+#geom_path(data=treatedStats, mapping=aes(x=time, y=Average))+
+#geom_point(data=untreatedStats, mapping=aes(x=time, y=Average, shape="Untreated"),   size=5)+
+#geom_errorbar(data=untreatedStats, mapping=aes(x=time, ymin=lowerCI, ymax=upperCI), width=5)+geom_path(data=untreatedStats, mapping=aes(x=time, y=Average))+
+#xlim(c(0,90))+ylim(c(0,8))+
+#labs(x = "Your x axis",y = "Your y axis",shape="Legend")
+
+```
+
+
+
+
+
+Make sure you copy and save your plot and print it with a detailed caption to turn in to your instructor.
 
